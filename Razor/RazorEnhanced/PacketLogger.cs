@@ -2,7 +2,6 @@ using Accord;
 using Accord.Imaging.Filters;
 using Accord.Math;
 using Assistant;
-using IronPython.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -681,3 +680,5 @@ namespace RazorEnhanced
         }
     }
 }
+
+using IronPython.Runtime;
