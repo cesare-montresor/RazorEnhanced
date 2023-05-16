@@ -8,6 +8,14 @@ using static Assistant.PacketLogger;
 
 namespace Assistant.Network
 {
+    public enum EventType {
+        PacketEvent,
+        HotKeyEvent,
+        JournalEvent,
+        TimerEvent,
+    }
+
+
     public class EventManager
     {
         static readonly public EventManager Instance = new EventManager();
