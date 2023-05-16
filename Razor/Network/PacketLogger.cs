@@ -7,6 +7,11 @@ using System.IO;
 using System.Linq;
 using System.Web.UI;
 using static RazorEnhanced.PacketLogger;
+using RazorEnhanced.UI;
+using static RazorEnhanced.Scripts;
+using System.Threading;
+using System.Threading.Tasks;
+using Assistant.Network;
 
 namespace Assistant
 {
@@ -14,6 +19,9 @@ namespace Assistant
 
     public class PacketLogger
     {
+        public delegate void OnLogPacketDataCallBack(PacketPath path, byte[] data);
+        
+
         //internal static readonly string DEFAULT_LOG_DIR = Misc.ScriptDirectory() + "\\log\\";
         public static readonly string DEFAULT_LOG_DIR = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         public static readonly string DEFAULT_LOG_FILE = "Razor_Packets.log";
@@ -37,7 +45,6 @@ namespace Assistant
         private string m_FileName;
         private string m_OutputPath;
 
-        
 
         public bool Active { get => m_Active; }
 
@@ -200,10 +207,11 @@ namespace Assistant
             sw.WriteLine(jsonDump);
             return !template.showHexDump;
         }
-
-
+        
         public void LogPacketData(PacketPath path, byte[] packetData, bool blocked = false)
         {
+            EventsHandler.Instance.didRecievePacket(path, packetData);
+
             if (!m_Active) return;
             if (!m_PacketPaths.Contains(path)) { return; }
 
@@ -266,8 +274,6 @@ namespace Assistant
             m_PacketPaths.Add(PacketPath.ServerToClient);
             OutputPath = DEFAULT_LOG_OUTPATH;
         }
-
-
 
 
     }
