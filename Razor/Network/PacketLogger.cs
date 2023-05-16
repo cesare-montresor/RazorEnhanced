@@ -210,7 +210,7 @@ namespace Assistant
         
         public void LogPacketData(PacketPath path, byte[] packetData, bool blocked = false)
         {
-            EventsHandler.Instance.didRecievePacket(path, packetData);
+            EventManager.Instance.didRecievePacket(path, packetData);
 
             if (!m_Active) return;
             if (!m_PacketPaths.Contains(path)) { return; }

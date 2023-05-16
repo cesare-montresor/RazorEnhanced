@@ -8,9 +8,9 @@ using static Assistant.PacketLogger;
 
 namespace Assistant.Network
 {
-    public class EventsHandler
+    public class EventManager
     {
-        static readonly public EventsHandler Instance = new EventsHandler();
+        static readonly public EventManager Instance = new EventManager();
 
         private Dictionary<Thread, Dictionary<int, HashSet<OnLogPacketDataCallBack>>> m_Callbacks = new Dictionary<Thread, Dictionary<int, HashSet<OnLogPacketDataCallBack>>>();
 
