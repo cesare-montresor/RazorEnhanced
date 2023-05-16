@@ -17,7 +17,7 @@ namespace RazorEnhanced
         public static void OnPacket(IronPython.Runtime.PythonFunction callback, int packetID)
         {
             var script = Scripts.CurrentScript();
-            EventsHandler.Instance.RegisterCallback(packetID, (path, packetData) =>
+            EventManager.Instance.RegisterCallback(packetID, (path, packetData) =>
             {
                 script.ScriptEngine.pyEngine.Call(callback, PacketLogger.PathToString[path], packetData);
             });
