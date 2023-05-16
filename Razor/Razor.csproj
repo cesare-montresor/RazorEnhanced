@@ -325,6 +325,7 @@
     <Compile Include="Enums\TargetFlagsExists.cs" />
     <Compile Include="Enums\TargetFlags.cs" />
     <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="Network\EventsHandler.cs" />
     <Compile Include="Network\PacketLogger.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
