@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Assistant.Network;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,7 +17,7 @@ namespace RazorEnhanced
         public static void OnPacket(IronPython.Runtime.PythonFunction callback, int packetID)
         {
             var script = Scripts.CurrentScript();
-            Assistant.PacketLogger.SharedInstance.RegisterCallback(packetID, (path, packetData) =>
+            EventsHandler.Instance.RegisterCallback(packetID, (path, packetData) =>
             {
                 script.ScriptEngine.pyEngine.Call(callback, PacketLogger.PathToString[path], packetData);
             });
