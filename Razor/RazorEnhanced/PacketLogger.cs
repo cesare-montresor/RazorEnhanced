@@ -18,21 +18,7 @@ namespace RazorEnhanced
     /// </summary>
     public class PacketLogger
     {
-        public readonly static Dictionary<PacketPath, string> PathToString = new Dictionary<PacketPath, string> {
-            { PacketPath.ClientToServer, "ClientToServer" },
-            { PacketPath.ServerToClient, "ServerToClient" },
-            { PacketPath.RazorToServer, "RazorToServer" },
-            { PacketPath.RazorToClient,  "RazorToClient" },
-            { PacketPath.PacketVideo, "PacketVideo" },
-        };
-
-        public readonly static Dictionary<string, PacketPath> StringToPath = new Dictionary<string, PacketPath> {
-            { "ClientToServer", PacketPath.ClientToServer},
-            { "ServerToClient", PacketPath.ServerToClient},
-            { "RazorToServer", PacketPath.RazorToServer },
-            { "RazorToClient", PacketPath.RazorToClient },
-            { "PacketVideo", PacketPath.PacketVideo },
-        };
+        
 
 
 
@@ -171,15 +157,15 @@ namespace RazorEnhanced
         public static string[] ListenPacketPath(string packetPath = "", bool active = true)
         {
             
-            var compareKeys = StringToPath.Keys.ToList();
-            var compareLower = StringToPath.Keys.Select(x => x.ToLower()).ToList();
+            var compareKeys = Packet.StringToPath.Keys.ToList();
+            var compareLower = Packet.StringToPath.Keys.Select(x => x.ToLower()).ToList();
             var matchPath = Regex.Replace(packetPath.ToLower(), "[^a-z]", "");
             var found = compareLower.IndexOf(matchPath);
 
             if (found != -1)
             {
                 var originalKey = compareKeys[found];
-                PacketPath path = StringToPath[originalKey];
+                PacketPath path = Packet.StringToPath[originalKey];
                 Assistant.PacketLogger.SharedInstance.ListenPacketPath(path, active);
             }
             else {
@@ -187,7 +173,7 @@ namespace RazorEnhanced
             }
 
             PacketPath[] activePaths = Assistant.PacketLogger.SharedInstance.ActivePacketPaths();
-            var activeKeys = StringToPath.Where(entry => activePaths.Contains(entry.Value)).Select(entry => entry.Key);
+            var activeKeys = Packet.StringToPath.Where(entry => activePaths.Contains(entry.Value)).Select(entry => entry.Key);
 
             return activeKeys.ToArray();
         }

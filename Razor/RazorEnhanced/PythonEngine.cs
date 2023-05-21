@@ -133,7 +133,8 @@ namespace RazorEnhanced
             Modules.Add("Timer", new RazorEnhanced.Timer());
             Modules.Add("Vendor", new RazorEnhanced.Vendor());
             Modules.Add("PacketLogger", new RazorEnhanced.PacketLogger());
-            
+            Modules.Add("Events", new RazorEnhanced.Events());
+                                                    
             //Setup builtin modules and scope
             foreach (var module in Modules) {
                 Engine.Runtime.Globals.SetVariable(module.Key, module.Value);
