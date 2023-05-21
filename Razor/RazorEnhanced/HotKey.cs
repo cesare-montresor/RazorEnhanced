@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using System.Diagnostics;
 using Assistant.UI;
 using System;
+using Assistant.Network;
 
 namespace RazorEnhanced
 {
@@ -121,6 +122,7 @@ namespace RazorEnhanced
 
         internal static bool KeyDown(Keys k)
         {
+            EventManager.Instance.didRecieveHotkey(k);
             HotKeyEvent.AddEvent(k);
 
             Debug.WriteLine("KD Keys: 0x{0:X}", k);

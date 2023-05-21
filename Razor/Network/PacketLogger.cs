@@ -1,4 +1,3 @@
-            {
 using Accord.Math;
 using Accord;
 using Newtonsoft.Json;
@@ -6,12 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Web.UI;
 using static RazorEnhanced.PacketLogger;
-using RazorEnhanced.UI;
-using static RazorEnhanced.Scripts;
-using System.Threading;
-using System.Threading.Tasks;
 using Assistant.Network;
 
 namespace Assistant
@@ -20,9 +14,7 @@ namespace Assistant
 
     public class PacketLogger
     {
-        public delegate void OnLogPacketDataCallBack(PacketPath path, byte[] data);
         
-
         //internal static readonly string DEFAULT_LOG_DIR = Misc.ScriptDirectory() + "\\log\\";
         public static readonly string DEFAULT_LOG_DIR = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         public static readonly string DEFAULT_LOG_FILE = "Razor_Packets.log";
