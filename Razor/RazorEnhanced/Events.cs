@@ -13,6 +13,7 @@ namespace RazorEnhanced
         Events.OnHotKey(hotkeyid, callback)
 
         - TODO:
+        Events.OnGump(gumpid, callback)
         Events.OnDamage(serial, callback)
         Events.OnSound(soundid, callback)
         Events.OnAnimation(animationid, callback)
@@ -20,6 +21,15 @@ namespace RazorEnhanced
         Events.OnCast(spellid, callback)
         Events.OnTimeout(millisec, callback, repeat)
         Events.OnTrade(serial, callback)
+        Events.OnScriptState(scriptname, callback)
+        Events.OnSave(callback)
+
+        Events.OnLogin(callback)
+        Events.OnLogout(callback)
+        Events.OnScreenLogin(callback)
+        Events.OnScreenShards(callback)
+        Events.OnScreenCharacters(callback)
+        
 
         */
 
