@@ -1,11 +1,7 @@
 ﻿using Assistant;
-using Assistant.Network;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+
 namespace RazorEnhanced
 {
     public class Events
@@ -19,8 +15,12 @@ namespace RazorEnhanced
         - TODO:
         Events.OnDamage(serial, callback)
         Events.OnSound(soundid, callback)
+        Events.OnAnimation(animationid, callback)
+        Events.OnEffect(effectid, callback)
         Events.OnCast(spellid, callback)
-        Events.onTimeout(millisec, callback, repeatOnce)
+        Events.OnTimeout(millisec, callback, repeat)
+        Events.OnTrade(serial, callback)
+
         */
 
 
@@ -34,7 +34,13 @@ namespace RazorEnhanced
             var script = Scripts.CurrentScript();
             EventManager.Instance.OnPacket(packetID, (path, packetData) =>
             {
-                script.ScriptEngine.pyEngine.Call(callback, path, packetData);
+                var pyPacketData = new IronPython.Runtime.PythonList();
+                pyPacketData.extend(packetData);
+                var result = script.ScriptEngine.pyEngine.Call(callback, path, pyPacketData);
+
+                //TODO: ability drop the packet using the return ? 
+                // if (result == null) { return false; } //don't drop
+                // return (bool)result;
             });
         }
 
@@ -42,14 +48,26 @@ namespace RazorEnhanced
         /// Register a Python function to be called when a journal entry get added.
         /// </summary>
         /// <param name="callback">Python function to be called.</param>
-        /// <param name="textMatch">Text to be matched in the journal (Empty "": Match all, "/regex/": Match Regexpr)</param>
-        public static void OnJournal(IronPython.Runtime.PythonFunction callback, string textMatch)
+        /// <param name="textMatchs">Texts to be matched in the journal (Empty "": Match all, "/regex/": Match Regexpr)</param>
+        public static void OnJournal(IronPython.Runtime.PythonFunction callback, IronPython.Runtime.PythonList textMatchs)
         {
             var script = Scripts.CurrentScript();
-            EventManager.Instance.OnJournal(textMatch, (hotkeyMatch) =>
+            textMatchs.ToList().ForEach(textMatch =>
             {
-                script.ScriptEngine.pyEngine.Call(callback, hotkeyMatch);
+                EventManager.Instance.OnJournal(textMatch.ToString(), (journalEntry) =>
+                {
+                    script.ScriptEngine.pyEngine.Call(callback, journalEntry);
+                    //TODO: ability suppress journal ? 
+                    // if (result == null) { return false; } //drop suppress
+                    // return (bool)result;
+                });
             });
+        }
+        public static void OnJournal(IronPython.Runtime.PythonFunction callback, string textMatch)
+        {
+            var textMatchs = new IronPython.Runtime.PythonList();
+            textMatchs.append(textMatch);
+            OnJournal(callback, textMatchs);
         }
 
         /// <summary>
@@ -64,6 +82,9 @@ namespace RazorEnhanced
             EventManager.Instance.OnHotkey(hotkey, (hotkeyMatch) =>
             {
                 script.ScriptEngine.pyEngine.Call(callback, hotkeyMatch);
+                //TODO: ability stop propagation of the event journal ? 
+                // if (result == null) { return false; } //don't stop propagation
+                // return (bool)result;
             });
         }
     }
