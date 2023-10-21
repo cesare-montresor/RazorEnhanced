@@ -21,6 +21,8 @@ using RazorEnhanced.UOScript;
 using System.Windows.Forms;
 using System.Threading.Tasks;
 using System.Management.Instrumentation;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+
 
 namespace RazorEnhanced
 {
@@ -31,9 +33,9 @@ namespace RazorEnhanced
         CSHARP,
         UOSTEAM,
     }
+
     public class EnhancedScriptService { 
         public readonly static EnhancedScriptService Instance = new EnhancedScriptService();
-
 
         private  readonly ConcurrentDictionary<string, EnhancedScript> m_ScriptList = new ConcurrentDictionary<string, EnhancedScript>();
 
@@ -43,7 +45,6 @@ namespace RazorEnhanced
         internal List<EnhancedScript> ScriptListTabPy() { return ScriptListTab().Where(script => script.Language == ScriptLanguage.PYTHON).ToList(); }
         internal List<EnhancedScript> ScriptListTabCs() { return ScriptListTab().Where(script => script.Language == ScriptLanguage.CSHARP).ToList(); }
         internal List<EnhancedScript> ScriptListTabUos() { return ScriptListTab().Where(script => script.Language == ScriptLanguage.UOSTEAM).ToList(); }
-
 
         internal bool AddScript(EnhancedScript script)
         {
@@ -57,6 +58,7 @@ namespace RazorEnhanced
                 return m_ScriptList.TryAdd(script.Fullpath, script);
             }
         }
+
         internal bool RemoveScript(EnhancedScript script)
         {
             if (m_ScriptList.ContainsKey(script.Fullpath))
@@ -101,6 +103,7 @@ namespace RazorEnhanced
             }
             return null;
         }
+
         internal void ClearAll()
         {
             StopAll();
@@ -114,12 +117,14 @@ namespace RazorEnhanced
                 script.Stop();
             }
         }
+
     }
+
     public class EnhancedScript
     {
         public readonly static EnhancedScriptService Service = EnhancedScriptService.Instance;
 
-        private ScriptItem m_ScriptItem;
+        private ScriptItem m_ScriptItem; //script info ui
         private string m_Fullpath="";
         private string m_Text = "";
         
@@ -142,8 +147,6 @@ namespace RazorEnhanced
         internal DateTime LastModified;
 
         private readonly object m_Lock = new object();
-
-
 
         public static ScriptLanguage ExtToLanguage(string extenstion)
         {
@@ -185,6 +188,7 @@ namespace RazorEnhanced
             }
             return Path.Combine(dir, filename + count + ext);
         }
+        
         public static EnhancedScript FromScriptItem(ScriptItem item)
         {
             var preload = true;
@@ -198,29 +202,23 @@ namespace RazorEnhanced
         public static EnhancedScript FromFile(string fullpath, bool wait = false, bool loop = false, Keys hotkey = Keys.None, bool hotkeyPass = false, bool autostart = false, bool preload = true, bool editor = true)
         {
             if (!File.Exists(fullpath)) { return null; }
-
             var script = Service.Search(fullpath);
             if (script!=null){ return script; }
-
-            script = new EnhancedScript(fullpath, "", wait, loop, hotkey, hotkeyPass, autostart, preload, editor);
-
-            script.Load();
+            script = new EnhancedScript(fullpath, "", wait, loop, hotkey, hotkeyPass, autostart, preload, editor);            
             return script;
         }
 
         public static EnhancedScript FromText(string content, ScriptLanguage language=ScriptLanguage.UNKNOWN, bool wait = false, bool loop = false, Keys hotkey=Keys.None, bool hotkeyPass=false, bool run = false, bool autostart = false, bool preload = true)
         {
             var filename = EnhancedScript.TempFilename(language);
-            EnhancedScript script = new EnhancedScript(filename, content, wait, loop, hotkey, hotkeyPass, autostart, preload, true);
-            script.SetLanguage(language);
+            EnhancedScript script = new EnhancedScript(filename, content, wait, loop, hotkey, hotkeyPass, autostart, preload, true, language);            
             return script;
         }
 
 
         // beginning of instance related, non-static methods/constructors/propeerties
-        internal EnhancedScript(string fullpath, string text, bool wait, bool loop, Keys hotkey, bool hotkeyPass, bool autostart, bool preload, bool editor)
+        internal EnhancedScript(string fullpath, string text, bool wait, bool loop, Keys hotkey, bool hotkeyPass, bool autostart, bool preload, bool editor, ScriptLanguage language = ScriptLanguage.UNKNOWN)
         {
-
             m_Fullpath = fullpath;
             
             m_Text = text;
@@ -231,12 +229,16 @@ namespace RazorEnhanced
             m_AutoStart = autostart;
             m_Preload = preload;
             m_Editor = editor;
+            
+            m_Language = language;
+            SetLanguage(language);
 
             StartMessage = true;
             StopMessage = false;
             LastModified = DateTime.MinValue;
-
-            m_ScriptEngine = new EnhancedScriptEngine(this, m_Preload);
+            
+            m_ScriptEngine = new EnhancedScriptEngine(this);            
+            Load();
             Add();
 
             if (autostart) { Start(); }
@@ -267,7 +269,6 @@ namespace RazorEnhanced
             }
             catch (Exception e)
             {
-                Misc.SendMessage("ERROR:EnhancedScript:Load: " + e.Message, 178);
                 return false;
             }
 
@@ -278,21 +279,16 @@ namespace RazorEnhanced
                 InitEngine();
             }
             return true;
-        }
+        }        
 
         public bool InitEngine()
         {
             if (m_Text.Trim() == "") {
                 return false;
             }
-            if (m_Preload)
-            {
-                m_ScriptEngine.Load();
-            }
+            m_ScriptEngine.Load();                        
             return true;
         }
-
-
 
         public bool Save(){
             try {
@@ -307,8 +303,6 @@ namespace RazorEnhanced
         }
 
         //Methods
-
-
 
         public ScriptLanguage SetLanguage(ScriptLanguage language = ScriptLanguage.UNKNOWN)
         {    
@@ -352,10 +346,7 @@ namespace RazorEnhanced
                 //EventManager.Instance.Unsubscribe(m_Thread); 
                 if (m_Thread != null) { Stop(); }
                 m_Thread = new Thread(AsyncStart);
-                m_Thread.Start();
-                //while (!m_Thread.IsAlive){ Misc.Pause(1); }
-
-                //m_Run = true;
+                m_Thread?.Start();
             }
             catch { }
         }
@@ -369,7 +360,7 @@ namespace RazorEnhanced
                 try
                 {
                     //EventManager.Instance.Unsubscribe(m_Thread);
-                    m_ScriptEngine.Run();
+                    m_ScriptEngine.Execute();
                 }
                 catch (ThreadAbortException ex) { return; }
                 catch (Exception ex)
@@ -379,20 +370,20 @@ namespace RazorEnhanced
                 
                 Misc.Pause(1);
             } while (Loop);
+            
         }
 
         internal void Stop()
         {
+            if (m_Thread == null) { return; }
+
             if (IsRunning) { 
                 try
                 {
                     if (m_Thread.ThreadState != ThreadState.AbortRequested)
                     {
                         //EventManager.Instance.Unsubscribe(m_Thread);
-                        //m_Thread.Interrupt();
-                        //m_Thread.Join();
-                        m_Thread.Abort();
-                        m_Thread = null;
+                        m_Thread?.Abort();
                     }
                 }
                 catch { }
@@ -402,8 +393,6 @@ namespace RazorEnhanced
         internal void Reset()
         {
             Stop();
-            //m_Thread = new Thread(AsyncStart);
-            //m_Run = false;
         }
 
 
@@ -432,7 +421,6 @@ namespace RazorEnhanced
                 }
             }
         }
-
         
         internal Thread Thread { get => m_Thread; }
 
@@ -485,7 +473,6 @@ namespace RazorEnhanced
         {
             get { lock (m_Lock) { return File.Exists(m_Fullpath); } }
         }
-
 
 
         internal string Text
@@ -584,9 +571,6 @@ namespace RazorEnhanced
             }
         }
 
-        
-
-
         internal bool IsRunning
         {
             get
@@ -594,12 +578,9 @@ namespace RazorEnhanced
                 lock (m_Lock)
                 {
                     if (m_Thread == null) { return false; }
-                    if (  (m_Thread.ThreadState & 
-                          ( ThreadState.Unstarted | 
-                            ThreadState.Stopped | 
-                            ThreadState.Aborted | 
-                            ThreadState.StopRequested | 
-                            ThreadState.AbortRequested) ) == 0)
+                    if (m_Thread.IsAlive) { return true;  }
+                    if (( m_Thread.ThreadState &
+                        ( ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted | ThreadState.StopRequested | ThreadState.AbortRequested) ) == 0)
                         //if (m_Thread.ThreadState == ThreadState.Running || m_Thread.ThreadState == ThreadState.WaitSleepJoin || m_Thread.ThreadState == ThreadState.AbortRequested)
                         return true;
                     else
@@ -614,32 +595,25 @@ namespace RazorEnhanced
 
     public class EnhancedScriptEngine
     {
-        private EnhancedScript m_Script;
-        private bool m_Loaded = false;
-        
         public PythonEngine pyEngine;
-        public CSharpEngine csEngine;
-        public UOSteamEngine uosEngine;
-
-        public Assembly csProgram;                                                    
-        public UOSScript uosProgram;
-
         public TracebackDelegate pyTraceback;
         public Action<string> m_StdoutWriter;
         public Action<string> m_StderrWriter;
 
+        public CSharpEngine csEngine;
+        public UOSteamEngine uosEngine;
 
-        
+        public Assembly csProgram;
+        public UOSScript uosProgram;
 
+        private EnhancedScript m_Script;
+
+        private bool m_Loaded = false;
 
         public EnhancedScriptEngine(EnhancedScript script, bool autoLoad = true)
         {
-            m_Script = script;
-            var lang = script.SetLanguage();
-            if (autoLoad && lang != ScriptLanguage.UNKNOWN)
-            {
-                Load();
-            }
+            m_Script = script;            
+            if (autoLoad && script.Language != ScriptLanguage.UNKNOWN){ Load(); }
         }
 
         public void SetTracebackPython(TracebackDelegate traceFunc)
@@ -675,19 +649,21 @@ namespace RazorEnhanced
             }
         }
 
-
         ///<summary>
         /// Load the script and bring the specifict engine state at one step before execution.
         /// </summary>
         public bool Load()
         {
+            if (pyEngine != null || csEngine != null || uosEngine != null) {                
+                m_Loaded = true;
+                return true; 
+            }
+
             if (m_Script.Text.Trim() == "") { 
-                //what if there are only comments but no actual code ? 
-                m_Loaded = false;
+                //what if there are only comments but no actual code ?                 
                 return false;
             }
 
-            m_Script.SetLanguage();
             try
             {
                 switch (m_Script.Language)
@@ -702,16 +678,17 @@ namespace RazorEnhanced
             {
                 HandleException(ex);
             }
+
             return m_Loaded;
         }
 
         ///<summary>
         /// Run the script.
         /// </summary>
-        public bool Run()
+        public bool Execute()
         {
-            if (!m_Loaded && !Load()) { return false; } // not loaded, and fail automatic loading.
-            bool result;
+            //Misc.SendMessage($"ThreadID: {Thread.CurrentThread.ManagedThreadId}", 147);
+            bool result = false;
 
             try {
                 switch (m_Script.Language) {
@@ -720,26 +697,48 @@ namespace RazorEnhanced
                     case ScriptLanguage.CSHARP: result = RunCSharp(); break;
                     case ScriptLanguage.UOSTEAM: result = RunUOSteam(); break;
                 }
-            } catch (Exception ex) {
+            } catch (Exception ex) {                
                 result = HandleException(ex);
             }
 
             return result;
-        }
+        }        
 
         // ----------------------------------------- PYTHON -----------------------------
 
-        private bool LoadPython()
+        public bool CreatePython()
         {
-
             try
             {
+                if (pyEngine != null) { return true; }
+
                 pyEngine = new PythonEngine();
+
+                if (pyTraceback != null) { pyEngine.Engine.SetTrace(pyTraceback); }
+                if (m_StderrWriter != null) { pyEngine.SetStderr(m_StderrWriter); }
+                if (m_StdoutWriter != null) { pyEngine.SetStdout(m_StdoutWriter); }
 
                 //Clear path hooks (why?)
                 var pc = HostingHelpers.GetLanguageContext(pyEngine.Engine) as PythonContext;
                 var hooks = pc.SystemState.Get__dict__()["path_hooks"] as PythonDictionary;
-                if (hooks != null) { hooks.Clear(); }
+                hooks.Clear();                
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+
+        private bool LoadPython()
+        {
+            try
+            {
+                if (pyEngine != null) { return true; }
+                                    
+                CreatePython();                 
 
                 //Load text
                 var content = m_Script.Text ?? "";
@@ -747,12 +746,9 @@ namespace RazorEnhanced
                 {
                     content = File.ReadAllText(m_Script.Fullpath);
                 }
-                if (content == null || content == "") { 
-                    return false; } 
+                if (content == null || content == "") { return false; }
 
-                if (!pyEngine.Load(content, m_Script.Fullpath)) {
-                    return false;
-                }
+                if (!pyEngine.Load(content, m_Script.Fullpath)) { return false; }
 
                 //get list of imported files (?hopefully?)
                 var filenames = pyEngine.Compiled.Engine.GetModuleFilenames();
@@ -771,27 +767,7 @@ namespace RazorEnhanced
         private bool RunPython()
         {
             try
-            {
-                DateTime lastModified = File.GetLastWriteTime(m_Script.Fullpath);
-                if (m_Script.LastModified < lastModified)
-                {
-                    LoadPython();
-                    // FileChangeDate update must be the last line of threads will messup (ex: mousewheel hotkeys)
-                    m_Script.LastModified = lastModified;
-                }
-
-                if (pyTraceback != null)
-                {
-                    pyEngine.Engine.SetTrace(pyTraceback);
-                }
-                if (m_StderrWriter != null)
-                {
-                    pyEngine.SetStderr(m_StderrWriter);
-                }
-                if (m_StdoutWriter != null)
-                {
-                    pyEngine.SetStdout(m_StdoutWriter);
-                }
+            {              
                 return pyEngine.Execute();
             } catch (Exception ex)
             {
@@ -954,11 +930,5 @@ namespace RazorEnhanced
             log.Clear();
         }
 
-
-
-
-
     }
-
-
 }
