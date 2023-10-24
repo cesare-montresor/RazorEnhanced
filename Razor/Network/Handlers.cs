@@ -31,6 +31,7 @@ namespace Assistant
             // 0x29 - UOKR confirm drop.  0 bytes payload (just a single byte, 0x29, no length or data)
             PacketHandler.RegisterClientToServerViewer(0x3A, new PacketViewerCallback(SetSkillLock));
             PacketHandler.RegisterClientToServerViewer(0x5D, new PacketViewerCallback(PlayCharacter));
+            PacketHandler.RegisterClientToServerViewer(0x6F, new PacketViewerCallback(TradeRequestFromClient));
             PacketHandler.RegisterClientToServerViewer(0x75, new PacketViewerCallback(RenameMobile));
             PacketHandler.RegisterClientToServerViewer(0x7D, new PacketViewerCallback(MenuResponse));
             PacketHandler.RegisterClientToServerFilter(0x80, new PacketFilterCallback(ServerListLogin));
@@ -45,6 +46,7 @@ namespace Assistant
             PacketHandler.RegisterClientToServerViewer(0xC2, new PacketViewerCallback(UnicodePromptSend));
             PacketHandler.RegisterClientToServerViewer(0xD7, new PacketViewerCallback(ClientEncodedPacket));
             PacketHandler.RegisterClientToServerViewer(0xF8, new PacketViewerCallback(CreateCharacter));
+            
 
             //Server -> Client handlers                       
             PacketHandler.RegisterServerToClientViewer(0x11, new PacketViewerCallback(MobileStatus));
@@ -72,7 +74,9 @@ namespace Assistant
             PacketHandler.RegisterServerToClientViewer(0x4E, new PacketViewerCallback(PersonalLight));
             PacketHandler.RegisterServerToClientViewer(0x4F, new PacketViewerCallback(GlobalLight));
             PacketHandler.RegisterServerToClientViewer(0x56, new PacketViewerCallback(PinLocation));
-            PacketHandler.RegisterServerToClientViewer(0x6F, new PacketViewerCallback(TradeRequest));
+            PacketHandler.RegisterServerToClientViewer(0x6F, new PacketViewerCallback(TradeRequestFromServer));
+            
+
             PacketHandler.RegisterServerToClientViewer(0x72, new PacketViewerCallback(ServerSetWarMode));
             PacketHandler.RegisterServerToClientViewer(0x73, new PacketViewerCallback(PingResponse));
             PacketHandler.RegisterServerToClientViewer(0x74, new PacketViewerCallback(Vendor.StoreBuyList));
@@ -215,8 +219,7 @@ namespace Assistant
         {
             Serial ser = p.ReadUInt32();
 
-            if (RazorEnhanced.ScriptRecorder.OnRecord)
-                RazorEnhanced.ScriptRecorder.instance().Record_ClientDoubleClick(ser);
+            RazorEnhanced.ScriptRecorderService.Instance.Record_ClientDoubleClick(ser);
 
             if (ser.IsItem)
             {
@@ -276,14 +279,12 @@ namespace Assistant
             {
                 case 0x09: // Sa disarm
                     {
-                        if (RazorEnhanced.ScriptRecorder.OnRecord)
-                            RazorEnhanced.ScriptRecorder.instance().Record_SADisarm();
+                        RazorEnhanced.ScriptRecorderService.Instance.Record_SADisarm();
                         break;
                     }
                 case 0x0A: // Sa Stun
                     {
-                        if (RazorEnhanced.ScriptRecorder.OnRecord)
-                            RazorEnhanced.ScriptRecorder.instance().Record_SAStun();
+                        RazorEnhanced.ScriptRecorderService.Instance.Record_SAStun();
                         break;
                     }
                 /*  case 0x10: // query object properties
@@ -301,8 +302,7 @@ namespace Assistant
                         //else if (ser.IsItem)
                         //  ent = World.FindItem(ser);
 
-                        if (RazorEnhanced.ScriptRecorder.OnRecord)
-                            RazorEnhanced.ScriptRecorder.instance().Record_ContextMenuResponse(ser, idx);
+                        RazorEnhanced.ScriptRecorderService.Instance.Record_ContextMenuResponse(ser, idx);
 
                         World.Player.HasContext = false;
                         World.Player.ContextID = 0;
@@ -316,8 +316,7 @@ namespace Assistant
                             ser = p.ReadUInt32();
                         ushort sid = p.ReadUInt16();
 
-                        if (RazorEnhanced.ScriptRecorder.OnRecord)
-                            RazorEnhanced.ScriptRecorder.instance().Record_ClientTextCommand(2, sid);
+                        RazorEnhanced.ScriptRecorderService.Instance.Record_ClientTextCommand(2, sid);
 
                         Spell s = Spell.Get(sid);
                         if (s != null)
@@ -361,8 +360,7 @@ namespace Assistant
                         try { skillIndex = Convert.ToInt32(command.Split(' ')[0]); }
                         catch { break; }
 
-                        if (RazorEnhanced.ScriptRecorder.OnRecord)
-                            RazorEnhanced.ScriptRecorder.instance().Record_ClientTextCommand(1, skillIndex);
+                        RazorEnhanced.ScriptRecorderService.Instance.Record_ClientTextCommand(1, skillIndex);
 
                         if (World.Player != null)
                             World.Player.LastSkill = skillIndex;
@@ -382,8 +380,7 @@ namespace Assistant
                                 ushort spellID = Convert.ToUInt16(split[0]);
                                 Serial serial = Convert.ToUInt32(split.Length > 1 ? Utility.ToInt32(split[1], -1) : -1);
 
-                                if (RazorEnhanced.ScriptRecorder.OnRecord)
-                                    RazorEnhanced.ScriptRecorder.instance().Record_ClientTextCommand(2, spellID);
+                                RazorEnhanced.ScriptRecorderService.Instance.Record_ClientTextCommand(2, spellID);
 
                                 Spell s = Spell.Get(spellID);
                                 if (s != null)
@@ -404,8 +401,7 @@ namespace Assistant
                         {
                             ushort spellID = Convert.ToUInt16(command);
 
-                            if (RazorEnhanced.ScriptRecorder.OnRecord)
-                                RazorEnhanced.ScriptRecorder.instance().Record_ClientTextCommand(2, spellID);
+                            RazorEnhanced.ScriptRecorderService.Instance.Record_ClientTextCommand(2, spellID);
 
                             Spell s = Spell.Get(spellID);
                             if (s != null)
@@ -421,15 +417,13 @@ namespace Assistant
                     }
                 case 0xF4: // Invoke Virtue
                     {
-                        if (RazorEnhanced.ScriptRecorder.OnRecord)
+                        try
                         {
-                            try
-                            {
-                                int virtueid = Convert.ToInt32(command.Split(' ')[0]);
-                                RazorEnhanced.ScriptRecorder.instance().Record_ClientTextCommand(3, virtueid);
-                            }
-                            catch { break; }
+                            int virtueid = Convert.ToInt32(command.Split(' ')[0]);
+                            RazorEnhanced.ScriptRecorderService.Instance.Record_ClientTextCommand(3, virtueid);
                         }
+                        catch { }
+                        
                         break;
                     }
 
@@ -463,11 +457,11 @@ namespace Assistant
 
         private static void RenameMobile(PacketReader p, PacketHandlerEventArgs args)
         {
-            if (RazorEnhanced.ScriptRecorder.OnRecord)
-            {
+            if (RazorEnhanced.ScriptRecorderService.Instance.Active())
+            {                                  
                 Serial ser = p.ReadUInt32();
                 string name = p.ReadStringSafe(30);
-                RazorEnhanced.ScriptRecorder.instance().Record_RenameMobile((int)ser, name);
+                RazorEnhanced.ScriptRecorderService.Instance.Record_RenameMobile((int)ser, name);
             }
         }
 
@@ -500,8 +494,7 @@ namespace Assistant
         {
             World.Player.HasQueryString = false;
 
-            if (!RazorEnhanced.ScriptRecorder.OnRecord)
-                return;
+            if (!RazorEnhanced.ScriptRecorderService.Instance.Active()) { return; }
 
             p.ReadUInt32(); //  Serial
             p.ReadByte(); // Parent ID
@@ -509,7 +502,7 @@ namespace Assistant
             byte yesno = p.ReadByte();
             int textlenght = p.ReadInt16();
             string text = p.ReadStringSafe(textlenght);
-            RazorEnhanced.ScriptRecorder.instance().Record_ResponseStringQuery(yesno, text);
+            RazorEnhanced.ScriptRecorderService.Instance.Record_ResponseStringQuery(yesno, text);
         }
 
         private static void LiftRequest(PacketReader p, PacketHandlerEventArgs args)
@@ -573,8 +566,7 @@ namespace Assistant
             if (m == null)
                 return;
 
-            if (RazorEnhanced.ScriptRecorder.OnRecord)
-                RazorEnhanced.ScriptRecorder.instance().Record_EquipRequest(item, layer, m);
+            RazorEnhanced.ScriptRecorderService.Instance.Record_EquipRequest(item, layer, m);
 
             // Aggiornamento icone spellgrid
             if (item.Layer == Layer.RightHand || item.Layer == Layer.LeftHand || item.Layer == Layer.FirstValid)
@@ -610,8 +602,7 @@ namespace Assistant
                 i.Amount = 0;
             }
             i.Container = dest;
-            if (RazorEnhanced.ScriptRecorder.OnRecord)
-                RazorEnhanced.ScriptRecorder.instance().Record_DropRequest(i, dser);
+            RazorEnhanced.ScriptRecorderService.Instance.Record_DropRequest(i, dser);
 
 
 
@@ -685,8 +676,7 @@ namespace Assistant
             World.Player.MoveReq(dir, seq);
             //Client.Instance.RequestMove(dir);
 
-            if (RazorEnhanced.ScriptRecorder.OnRecord)
-                RazorEnhanced.ScriptRecorder.instance().Record_Movement(dir);
+            RazorEnhanced.ScriptRecorderService.Instance.Record_Movement(dir);
         }
 
         private static void ContainerContentUpdate(Packet p, PacketHandlerEventArgs args)
@@ -1134,12 +1124,8 @@ namespace Assistant
         {
             World.Items.Clear();
             World.Mobiles.Clear();
-            foreach (var entry in RazorEnhanced.Scripts.EnhancedScripts)
-            {
-                RazorEnhanced.Scripts.EnhancedScript script = entry.Value as RazorEnhanced.Scripts.EnhancedScript;
-                script.Stop();
-                script.Reset();
-            }
+            EnhancedScript.Service.StopAll();
+
 
             if (Engine.ClientMajor >= 7)
                 UseNewStatus = true;
@@ -1597,7 +1583,7 @@ namespace Assistant
             m.Hits = p.ReadUInt16();
             m.HitsMax = p.ReadUInt16();
 
-            p.ReadBoolean();//CanBeRenamed
+            m.CanRename = p.ReadBoolean();//CanRename
 
             byte type = p.ReadByte();
 
@@ -2144,7 +2130,7 @@ namespace Assistant
                         Assistant.Client.Instance.SendToServer(new SingleClick(item));
 
                     bool lootHidden = RazorEnhanced.Settings.General.ReadBool("AllowHiddenLooting");
-                    if (World.Player != null
+                    if (World.Player != null && !World.Player.IsGhost
                         && !RazorEnhanced.AutoLoot.AutoMode
                         && RazorEnhanced.Settings.General.ReadBool("AutoOpenCorpses")
                         && Utility.InRange(item.Position, World.Player.Position, RazorEnhanced.Settings.General.ReadInt("CorpseRange"))
@@ -2619,8 +2605,7 @@ namespace Assistant
 
             RazorEnhanced.GumpInspector.GumpResponseAddLogEnd();
 
-            if (RazorEnhanced.ScriptRecorder.OnRecord)
-                RazorEnhanced.ScriptRecorder.instance().Record_GumpsResponse(gumpID, bid);
+            RazorEnhanced.ScriptRecorderService.Instance.Record_GumpsResponse(gumpID, bid);
 
             if (gd != null)
             {
@@ -3119,8 +3104,7 @@ namespace Assistant
             pvSrc.ReadUInt16(); //itemID
             ushort hue = pvSrc.ReadUInt16();
 
-            if (RazorEnhanced.ScriptRecorder.OnRecord)
-                RazorEnhanced.ScriptRecorder.instance().Record_MenuResponse(index);
+            RazorEnhanced.ScriptRecorderService.Instance.Record_MenuResponse(index);
 
             World.Player.HasMenu = false;
         }
@@ -3260,14 +3244,13 @@ namespace Assistant
 
         private static void ClientAsciiPromptResponse(PacketReader p, PacketHandlerEventArgs args)
         {
-            if (!RazorEnhanced.ScriptRecorder.OnRecord)
-                return;
+            if (!RazorEnhanced.ScriptRecorderService.Instance.Active()) { return; }
 
             p.ReadUInt32(); // sender serial
             p.ReadUInt32(); // Prompt ID
             uint type = p.ReadUInt32(); // type
             string text = p.ReadUnicodeStringSafe();
-            RazorEnhanced.ScriptRecorder.instance().Record_AsciiPromptResponse(type, text);
+            RazorEnhanced.ScriptRecorderService.Instance.Record_AsciiPromptResponse(type, text);
         }
 
         private static void ResyncRequest(PacketReader p, PacketHandlerEventArgs args)
@@ -3557,8 +3540,7 @@ namespace Assistant
         {
             uint serialbersaglio = p.ReadUInt32();
 
-            if (RazorEnhanced.ScriptRecorder.OnRecord)
-                RazorEnhanced.ScriptRecorder.instance().Record_AttackRequest(serialbersaglio);
+            RazorEnhanced.ScriptRecorderService.Instance.Record_AttackRequest(serialbersaglio);
 
             if (RazorEnhanced.Friend.PreventAttack)
             {
@@ -3579,11 +3561,99 @@ namespace Assistant
             Targeting.LastAttack = serialbersaglio;
         }
 
-        private static void TradeRequest(PacketReader p, PacketHandlerEventArgs args)
+
+
+        enum TradeAction
         {
+            Start = 0,
+            Cancel = 1,
+            Update = 2,
+            MoneyUpdate = 3,
+            MoneyLimit = 4,
+        };
+
+        private static void TradeRequestFromClient(PacketReader p, PacketHandlerEventArgs args) {
+            TradeRequest(p, args, false);
+        }
+        private static void TradeRequestFromServer(PacketReader p, PacketHandlerEventArgs args) {
             if (Assistant.Engine.MainWindow.BlockTradeRequestCheckBox.Checked)
             {
                 args.Block = true;
+                return;
+            }
+            TradeRequest(p, args, true);
+        }
+        private static void TradeRequest(PacketReader p, PacketHandlerEventArgs args, bool server)
+        {
+            if (World.Player == null) { return; }
+            
+
+            var action = (TradeAction)p.ReadByte();
+            int serial = (int)p.ReadUInt32();
+
+            Trade.TradeData trade;
+            switch (action)
+            {                                       
+                case TradeAction.Start:
+                    trade = new Trade.TradeData();
+                    trade.LastUpdate = TradeService.Timestamp();
+                    trade.SerialTrader = serial;
+                    trade.ContainerMe = (int)p.ReadUInt32();
+                    trade.TradeID = trade.ContainerMe;
+                    trade.ContainerTrader = (int)p.ReadUInt32();
+                    var contMe = Items.FindBySerial(trade.ContainerMe);
+                    var contTrader = Items.FindBySerial(trade.ContainerTrader);
+
+                    // Both player must be found/visible
+                    if (contMe == null || contTrader == null) { return; }
+
+                    bool hasName = p.ReadBoolean();
+                    trade.NameTrader = string.Empty;
+
+                    if (hasName && p.Position < p.Length)
+                    {
+                        trade.NameTrader = p.ReadString();
+                    }
+                    TradeService.Instance.TradeData.Add(trade.TradeID, trade);
+                    break;
+
+                case TradeAction.Cancel:
+                    TradeService.Instance.TradeData.Remove(serial);
+                    break;
+
+                case TradeAction.Update:
+                    if (!TradeService.Instance.TradeData.ContainsKey(serial)) { return; }
+                    trade = TradeService.Instance.TradeData[serial];
+
+                    uint acceptMe = p.ReadUInt32();
+                    uint acceptTrader = p.ReadUInt32();
+
+                    trade.LastUpdate = TradeService.Timestamp();
+                    trade.AcceptMe = acceptMe != 0;
+                    trade.AcceptTrader = acceptTrader != 0;
+
+                    break;
+                case TradeAction.MoneyUpdate:
+                    if (!TradeService.Instance.TradeData.ContainsKey(serial)) { return; }
+                    trade = TradeService.Instance.TradeData[serial];
+                    trade.LastUpdate = TradeService.Timestamp();
+                    if (server){
+                        trade.GoldTrader = (int)p.ReadUInt32();
+                        trade.PlatinumTrader = (int)p.ReadUInt32();
+                    }
+                    else {
+                        trade.GoldMe = (int)p.ReadUInt32();
+                        trade.PlatinumMe = (int)p.ReadUInt32();
+                    }
+                    break;
+
+                case TradeAction.MoneyLimit:
+                    if (!TradeService.Instance.TradeData.ContainsKey(serial)) { return; }
+                    trade = TradeService.Instance.TradeData[serial];
+                    trade.LastUpdate = TradeService.Timestamp();
+                    trade.GoldMax = (int)p.ReadUInt32();
+                    trade.PlatinumMax = (int)p.ReadUInt32();
+                    break;
             }
         }
     }

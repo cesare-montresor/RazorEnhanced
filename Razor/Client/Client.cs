@@ -12,6 +12,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Linq;
 using System.Reflection;
 using AutoUpdaterDotNET;
+using RazorEnhanced;
 
 namespace Assistant
 {
@@ -107,7 +108,7 @@ namespace Assistant
 
             RazorEnhanced.Settings.Load(RazorEnhanced.Profiles.LastUsed());
 
-            RazorEnhanced.Shard.Read(out List<RazorEnhanced.Shard> shards);
+            var shards = RazorEnhanced.Shard.Read();
 
             RazorEnhanced.Shard selected = Client.Instance.SelectShard(shards);
             m_Running = true;
@@ -134,7 +135,7 @@ namespace Assistant
                     {
                         if (File.Exists(selected.ClientPath))
                         {
-                            RazorEnhanced.Shard.Read(out shards);
+                            shards = RazorEnhanced.Shard.Read();
                             selected = Instance.SelectShard(shards);                            
                         }
                         if (launcher.ActiveControl.Text == "Launch CUO")
@@ -401,7 +402,7 @@ namespace Assistant
             m_Features = features;
         }
         public abstract void RunUI();
-        public abstract RazorEnhanced.Shard SelectShard(System.Collections.Generic.List<RazorEnhanced.Shard> shards);
+        internal abstract RazorEnhanced.Shard SelectShard(System.Collections.Generic.List<RazorEnhanced.Shard> shards);
 
         protected DateTime m_ConnectionStart;
         //public  DateTime ConnectionStart { get; }
@@ -509,7 +510,8 @@ namespace Assistant
             if (Assistant.Engine.MainWindow.RestockStop.Enabled == true)
                 Assistant.Engine.MainWindow.RestockStop.PerformClick();
 
-            RazorEnhanced.UI.EnhancedScriptEditor.End();
+            ScriptRecorderService.Instance.RemoveAll();
+            //RazorEnhanced.UI.EnhancedScriptEditor.End();
         }
 
 
