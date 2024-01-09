@@ -14,6 +14,8 @@ using static IronPython.Modules.PythonIterTools;
 using static RazorEnhanced.PacketLogger;
 using static RazorEnhanced.PacketLogger.PacketTemplate;
 
+using IronPython.Runtime;
+
 namespace RazorEnhanced
 {
     /// <summary>
@@ -80,7 +82,7 @@ namespace RazorEnhanced
 
         public static void SendToServer(PythonList packetData)
         {
-            SendToServer(packetData.Apply(data => (byte)((int)data + 0)));
+            SendToServer(packetData.Apply(_ObjectToBytes));
         }
 
         /// <summary>
@@ -97,9 +99,21 @@ namespace RazorEnhanced
         }
         public static void SendToClient(PythonList packetData)
         {
-            SendToClient(packetData.Apply(data => (byte)((int)data + 0)) );
+            SendToClient(packetData.Apply(_ObjectToBytes) );
         }
 
+        private static byte _ObjectToBytes(object data) {
+            var value = 0;
+            try
+            {
+                value = int.Parse(data.ToString());
+            }
+            catch (Exception e)
+            {
+                Misc.SendMessage($"PacketLogger: Warning: Failed to convert {data} into as byte:\n{e.Message}");
+            }
+            return (byte)value;
+        }
 
 
 
@@ -667,5 +681,3 @@ namespace RazorEnhanced
         }
     }
 }
-
-using IronPython.Runtime;

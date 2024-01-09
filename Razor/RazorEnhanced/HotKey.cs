@@ -6,7 +6,6 @@ using System.Windows.Forms;
 using System.Diagnostics;
 using Assistant.UI;
 using System;
-using Assistant.Network;
 
 namespace RazorEnhanced
 {

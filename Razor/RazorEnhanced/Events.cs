@@ -1,4 +1,4 @@
-﻿using Assistant;
+﻿ using Assistant;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -29,8 +29,6 @@ namespace RazorEnhanced
         Events.OnScreenLogin(callback)
         Events.OnScreenShards(callback)
         Events.OnScreenCharacters(callback)
-        
-
         */
 
 
@@ -41,7 +39,7 @@ namespace RazorEnhanced
         /// <param name="packetID">PacketID to filter (-1: Match all)</param>
         public static void OnPacket(IronPython.Runtime.PythonFunction callback, int packetID)
         {
-            var script = Scripts.CurrentScript();
+            var script = EnhancedScriptService.Instance.CurrentScript();
             EventManager.Instance.OnPacket(packetID, (path, packetData) =>
             {
                 var pyPacketData = new IronPython.Runtime.PythonList();
@@ -61,7 +59,7 @@ namespace RazorEnhanced
         /// <param name="textMatchs">Texts to be matched in the journal (Empty "": Match all, "/regex/": Match Regexpr)</param>
         public static void OnJournal(IronPython.Runtime.PythonFunction callback, IronPython.Runtime.PythonList textMatchs)
         {
-            var script = Scripts.CurrentScript();
+            var script = EnhancedScriptService.Instance.CurrentScript();
             textMatchs.ToList().ForEach(textMatch =>
             {
                 EventManager.Instance.OnJournal(textMatch.ToString(), (journalEntry) =>
@@ -88,7 +86,7 @@ namespace RazorEnhanced
 
         public static void OnHotkey(IronPython.Runtime.PythonFunction callback, string hotkey)
         {
-            var script = Scripts.CurrentScript();
+            var script = EnhancedScriptService.Instance.CurrentScript();
             EventManager.Instance.OnHotkey(hotkey, (hotkeyMatch) =>
             {
                 script.ScriptEngine.pyEngine.Call(callback, hotkeyMatch);
