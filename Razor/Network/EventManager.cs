@@ -1,6 +1,7 @@
 using Accord.Math;
 using RazorEnhanced;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -90,10 +91,10 @@ namespace Assistant
 
 
         private HashSet<Thread> m_Threads = new HashSet<Thread>();
-        private readonly Dictionary<Thread, Dictionary<int, HashSet<OnPacketCallback>>> m_PacketCallbacks = new Dictionary<Thread, Dictionary<int, HashSet<OnPacketCallback>>>();
-        private readonly Dictionary<Thread, Dictionary<string, HashSet<OnJournalCallback>>> m_JournalCallbacks = new Dictionary<Thread, Dictionary<string, HashSet<OnJournalCallback>>>();
-        private readonly Dictionary<Thread, Dictionary<string, HashSet<OnHotkeyCallback>>> m_HotkeyCallbacks = new Dictionary<Thread, Dictionary<string, HashSet<OnHotkeyCallback>>>();
-
+        private readonly ConcurrentDictionary<Thread, ConcurrentDictionary<int, HashSet<OnPacketCallback>>> m_PacketCallbacks = new ConcurrentDictionary<Thread, ConcurrentDictionary<int, HashSet<OnPacketCallback>>>();
+        private readonly ConcurrentDictionary<Thread, ConcurrentDictionary<string, HashSet<OnJournalCallback>>> m_JournalCallbacks = new ConcurrentDictionary<Thread, ConcurrentDictionary<string, HashSet<OnJournalCallback>>>();
+        private readonly ConcurrentDictionary<Thread, ConcurrentDictionary<string, HashSet<OnHotkeyCallback>>> m_HotkeyCallbacks = new ConcurrentDictionary<Thread, ConcurrentDictionary<string, HashSet<OnHotkeyCallback>>>();
+        
         // Auto-cleanup based on thead state/activity, can and should be improved.
         public void Cleanup()
         {
@@ -109,12 +110,16 @@ namespace Assistant
             dead.ToList().ForEach(thread => Unsubscribe(thread));
         }
 
+        private object m_Lock = new();
         public void Unsubscribe(Thread thread = null)
         {
-            m_Threads.Remove(thread);
-            m_PacketCallbacks.Remove(thread);
-            m_JournalCallbacks.Remove(thread);
-            m_HotkeyCallbacks.Remove(thread);
+            if (thread == null) { thread = Thread.CurrentThread; }
+            lock (m_Lock) {
+                m_PacketCallbacks.TryRemove(thread, out var _);
+                m_JournalCallbacks.TryRemove(thread, out var _);
+                m_HotkeyCallbacks.TryRemove(thread, out var _);
+                m_Threads.Remove(thread);
+            }
         }
 
         // notify event menager for new events
@@ -232,13 +237,14 @@ namespace Assistant
             Thread thread = Thread.CurrentThread;
             if (!m_PacketCallbacks.ContainsKey(thread))
             {
-                m_PacketCallbacks[thread] = new Dictionary<int, HashSet<OnPacketCallback>>();
+                m_PacketCallbacks[thread] = new ConcurrentDictionary<int, HashSet<OnPacketCallback>>();
             }
             if (!m_PacketCallbacks[thread].ContainsKey(packetID))
             {
                 m_PacketCallbacks[thread][packetID] = new HashSet<OnPacketCallback>();
             }
             m_PacketCallbacks[thread][packetID].Add(callback);
+            m_Threads.Add(thread);
         }
 
         public void OnJournal(string match, OnJournalCallback callback)
@@ -247,13 +253,14 @@ namespace Assistant
             Thread thread = Thread.CurrentThread;
             if (!m_JournalCallbacks.ContainsKey(thread))
             {
-                m_JournalCallbacks[thread] = new Dictionary<string, HashSet<OnJournalCallback>>();
+                m_JournalCallbacks[thread] = new ConcurrentDictionary<string, HashSet<OnJournalCallback>>();
             }
             if (!m_JournalCallbacks[thread].ContainsKey(match))
             {
                 m_JournalCallbacks[thread][match] = new HashSet<OnJournalCallback>();
             }
             m_JournalCallbacks[thread][match].Add(callback);
+            m_Threads.Add(thread);
         }
 
         public void OnHotkey(string hotkey, OnHotkeyCallback callback)
@@ -262,13 +269,14 @@ namespace Assistant
             Thread thread = Thread.CurrentThread;
             if (!m_HotkeyCallbacks.ContainsKey(thread))
             {
-                m_HotkeyCallbacks[thread] = new Dictionary<string, HashSet<OnHotkeyCallback>>();
+                m_HotkeyCallbacks[thread] = new ConcurrentDictionary<string, HashSet<OnHotkeyCallback>>();
             }
             if (!m_HotkeyCallbacks[thread].ContainsKey(hotkey))
             {
                 m_HotkeyCallbacks[thread][hotkey] = new HashSet<OnHotkeyCallback>();
             }
             m_HotkeyCallbacks[thread][hotkey].Add(callback);
+            m_Threads.Add(thread);
         }
     }
 }

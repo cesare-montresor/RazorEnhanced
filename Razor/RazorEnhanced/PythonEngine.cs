@@ -86,7 +86,8 @@ namespace RazorEnhanced
                 { "Timer", new RazorEnhanced.Timer() },
                 { "Trade", new RazorEnhanced.Trade() },
                 { "Vendor", new RazorEnhanced.Vendor() },
-                { "PacketLogger", new RazorEnhanced.PacketLogger() }
+                { "PacketLogger", new RazorEnhanced.PacketLogger() },
+                { "Events", new RazorEnhanced.Events() }
             };
 
             //Setup builtin modules and scope

@@ -1201,7 +1201,7 @@ namespace RazorEnhanced
         /// <returns>The path to the saved file.</returns>
         public static string PacketLogStop()
         {
-            return Assistant.Packet.StopRecording();
+            return Assistant.PacketLogger.SharedInstance.StopRecording();
         }
 
 

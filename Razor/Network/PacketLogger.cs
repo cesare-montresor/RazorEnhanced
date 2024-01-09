@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using static RazorEnhanced.PacketLogger;
-using Assistant.Network;
 
 namespace Assistant
 {
