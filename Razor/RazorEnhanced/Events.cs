@@ -82,7 +82,7 @@ namespace RazorEnhanced
         /// Register a Python function to be called when a hotkey get pressed
         /// </summary>
         /// <param name="callback">Python function to be called.</param>
-        /// <param name="hotkey">Text to be matched in the journal (Empty "": Match all, "/regex/": Match Regexpr)</param>
+        /// <param name="hotkey">Name of the Hotkey</param>
 
         public static void OnHotkey(IronPython.Runtime.PythonFunction callback, string hotkey)
         {
@@ -90,9 +90,6 @@ namespace RazorEnhanced
             EventManager.Instance.OnHotkey(hotkey, (hotkeyMatch) =>
             {
                 script.ScriptEngine.pyEngine.Call(callback, hotkeyMatch);
-                //TODO: ability stop propagation of the event journal ? 
-                // if (result == null) { return false; } //don't stop propagation
-                // return (bool)result;
             });
         }
     }
