@@ -1193,18 +1193,7 @@ namespace RazorEnhanced
         {
             return ScreenCapManager.CaptureNowPath();
         }
-
- 
-        /// <summary>
-        /// Stop the RazorEnhanced packet logger.
-        /// </summary>
-        /// <returns>The path to the saved file.</returns>
-        public static string PacketLogStop()
-        {
-            return Assistant.PacketLogger.SharedInstance.StopRecording();
-        }
-
-
+        
         /// <summary>
         /// The MapInfo class is used to store information about the Map location.
         /// </summary>
