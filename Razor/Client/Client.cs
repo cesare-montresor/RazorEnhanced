@@ -16,6 +16,7 @@ using RazorEnhanced;
 using Mono.Options;
 using System.Security.RightsManagement;
 using System.Security.Cryptography;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace Assistant
 {
@@ -174,18 +175,34 @@ namespace Assistant
             return selected;
         }
 
+        internal static void EnsureDirectoriesExist()
+        {
+            System.IO.Directory.CreateDirectory(Path.Combine(Assistant.Engine.RootPath, "Profiles"));
+            System.IO.Directory.CreateDirectory(Path.Combine(Assistant.Engine.RootPath, "Backup"));
+            System.IO.Directory.CreateDirectory(Path.Combine(Assistant.Engine.RootPath, "Scripts"));
+        }
+
         internal virtual bool Init(RazorEnhanced.Shard selected)
         {
+            if (selected.ClientFolder != null && Directory.Exists(selected.ClientFolder))
+            {
+                Ultima.Files.SetMulPath(selected.ClientFolder);
+            }
+            else
+            {
+                MessageBox.Show("Unable to find the Data Folder " + selected.ClientFolder, "ERROR!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                RazorEnhanced.Settings.General.WriteBool("NotShowLauncher", false);
+                return false;
+            }
+
             RazorEnhanced.Config.LoadAll();
 
             RazorEnhanced.Journal.GlobalJournal.Clear(); // really just force it to be instantiated
 
-
-            System.IO.Directory.CreateDirectory(Path.Combine(Assistant.Engine.RootPath, "Profiles"));
-            System.IO.Directory.CreateDirectory(Path.Combine(Assistant.Engine.RootPath, "Backup"));
-            System.IO.Directory.CreateDirectory(Path.Combine(Assistant.Engine.RootPath, "Scripts"));
+            EnsureDirectoriesExist();
 
             List<string> locations = ValidFileLocations();
+            RazorEnhanced.Skills.InitData();
 
             // Setup AutoUpdater Parameters
             // AutoUpdater
@@ -224,16 +241,7 @@ namespace Assistant
                 return;
             }
 
-            if (dataDir != null && Directory.Exists(dataDir))
-            {
-                Ultima.Files.SetMulPath(dataDir);
-            }
-            else
-            {
-                MessageBox.Show("Unable to find the Data Folder " + dataDir, "ERROR!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                RazorEnhanced.Settings.General.WriteBool("NotShowLauncher", false);
-                return;
-            }
+
 
             Language.LoadCliLoc();
 

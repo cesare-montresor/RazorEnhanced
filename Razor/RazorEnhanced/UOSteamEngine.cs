@@ -499,6 +499,7 @@ namespace RazorEnhanced.UOS
             m_Interpreter.RegisterExpressionHandler("inrange", InRange);
             m_Interpreter.RegisterExpressionHandler("buffexists", BuffExists);
             m_Interpreter.RegisterExpressionHandler("property", Property);
+            m_Interpreter.RegisterExpressionHandler("durability", Durability);
             m_Interpreter.RegisterExpressionHandler("findtype", FindType);
             m_Interpreter.RegisterExpressionHandler("findlayer", FindLayer);
             m_Interpreter.RegisterExpressionHandler("skillstate", SkillState);
@@ -1034,14 +1035,8 @@ namespace RazorEnhanced.UOS
                 Item item = Items.FindBySerial((int)serial);
                 if (item != null)
                 {
-                    List<String> props = Items.GetPropStringList((int)serial);
-                    foreach (String prop in props)
-                    {
-                        if (0 == String.Compare(findProp, prop, true))
-                        {
-                            return true;
-                        }
-                    }
+                    float value = Items.GetPropValue((int)serial, findProp);
+                    return value;                    
                 }
             }
 
@@ -1061,6 +1056,32 @@ namespace RazorEnhanced.UOS
             }
             return false;
         }
+
+        /// <summary>
+        /// durability ('name') (serial) [operator] [value]
+        /// </summary>
+        private static IComparable Durability(string expression, Argument[] args, bool quiet)
+        {
+            if (args.Length < 1)
+            {
+                throw new RunTimeError(null, "durability requires 1 parameters");
+            }
+
+            uint serial = args[0].AsSerial();
+            Assistant.Serial thing = new Assistant.Serial(serial);
+
+            if (thing.IsItem)
+            {
+                Item item = Items.FindBySerial((int)serial);
+                if (item != null)
+                {
+                    return item.Durability;
+                }
+            }
+
+            return false;
+        }
+
 
         /// <summary>
         /// ingump (gump id/'any') ('text')
@@ -2084,6 +2105,23 @@ namespace RazorEnhanced.UOS
 
             return true;
         }
+
+        static internal Dictionary<string, string> map = new Dictionary<string, string>()
+            {
+                {"north", "North" },
+                {"south", "South" },
+                {"east", "East" },
+                {"west", "West" },
+                {"southwest", "Left" },
+                {"left", "Left" },
+                {"northwest", "Up" },
+                {"up", "Up" },
+                {"southeast", "Down" },
+                {"down", "Down" },
+                {"northeast", "Right" },
+                {"right", "Right" },
+            };
+
         /// <summary>
         /// walk (direction)
         /// </summary>
@@ -2094,7 +2132,14 @@ namespace RazorEnhanced.UOS
 
             if (args.Length == 1)
             {
-                string direction = args[0].AsString();
+                string direction = args[0].AsString().ToLower();
+                if (!map.ContainsKey(direction))
+                {
+                    throw new IllegalArgumentException(args[0].AsString() + " not recognized.");
+                }
+                direction = map[direction];
+                if (Player.Direction != direction)
+                    Player.Walk(direction);
                 Player.Walk(direction);
             }
 
@@ -2130,7 +2175,14 @@ namespace RazorEnhanced.UOS
 
             if (args.Length == 1)
             {
-                string direction = args[0].AsString();
+                string direction = args[0].AsString().ToLower();
+                if (!map.ContainsKey(direction))
+                {
+                    throw new IllegalArgumentException(args[0].AsString() + " not recognized.");
+                }
+                direction = map[direction];
+                if (Player.Direction != direction)
+                    Player.Walk(direction);
                 Player.Run(direction);
             }
 
@@ -2144,7 +2196,12 @@ namespace RazorEnhanced.UOS
         {
             if (args.Length == 1)
             {
-                string direction = args[0].AsString();
+                string direction = args[0].AsString().ToLower();
+                if (! map.ContainsKey(direction))
+                {
+                    throw new IllegalArgumentException(args[0].AsString() + " not recognized.");
+                }
+                direction = map[direction];
                 if (Player.Direction != direction)
                     Player.Walk(direction);
             }
