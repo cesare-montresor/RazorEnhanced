@@ -84,6 +84,7 @@ namespace Assistant
     {
         static readonly public EventManager Instance = new EventManager();
 
+
         public delegate void OnPacketCallback(string path, byte[] data);
         public delegate void OnJournalCallback(Journal.JournalEntry entry);
         public delegate void OnHotkeyCallback(string hotkey);
@@ -95,6 +96,7 @@ namespace Assistant
         private readonly ConcurrentDictionary<Thread, ConcurrentDictionary<string, HashSet<OnJournalCallback>>> m_JournalCallbacks = new ConcurrentDictionary<Thread, ConcurrentDictionary<string, HashSet<OnJournalCallback>>>();
         private readonly ConcurrentDictionary<Thread, ConcurrentDictionary<string, HashSet<OnHotkeyCallback>>> m_HotkeyCallbacks = new ConcurrentDictionary<Thread, ConcurrentDictionary<string, HashSet<OnHotkeyCallback>>>();
         
+
         // Auto-cleanup based on thead state/activity, can and should be improved.
         public void Cleanup()
         {
@@ -200,7 +202,7 @@ namespace Assistant
         {
             var notify = new Task(() =>
             {
-                var textHotkey = hotkey.ToString();
+                var textHotkey = hotkey.ToString() ;
                 Cleanup();
                 foreach (var pairs in m_HotkeyCallbacks)
                 {

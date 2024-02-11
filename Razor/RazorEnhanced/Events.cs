@@ -6,6 +6,8 @@ namespace RazorEnhanced
 {
     public class Events
     {
+
+
         /*
         - DONE:
         Events.OnPacket(packetid, callback)
@@ -82,10 +84,10 @@ namespace RazorEnhanced
         /// Register a Python function to be called when a hotkey get pressed
         /// </summary>
         /// <param name="callback">Python function to be called.</param>
-        /// <param name="hotkey">Name of the Hotkey</param>
-
-        public static void OnHotkey(IronPython.Runtime.PythonFunction callback, string hotkey)
+        /// <param name="hotkey">(Optional) Name of the Hotkey (null or "": Match all)</param>
+        public static void OnHotkey(IronPython.Runtime.PythonFunction callback, string hotkey=null)
         {
+            if (hotkey == null) { hotkey = ""; }
             var script = EnhancedScriptService.Instance.CurrentScript();
             EventManager.Instance.OnHotkey(hotkey, (hotkeyMatch) =>
             {
