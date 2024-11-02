@@ -1,3 +1,12 @@
+# Discontinued
+
+RazorEnhaced was once an OpenSoruce project, best UO Assistant on the market, unfortunatly the maintainer decided to go closed soruce.
+I'll keep this repo here for future opensoruce reference
+
+
+
+
+
 ![GitHub](https://img.shields.io/github/license/RazorEnhanced/RazorEnhanced)
 ![GitHub repo size](https://img.shields.io/github/repo-size/RazorEnhanced/RazorEnhanced)
 ![GitHub lines](https://tokei.rs/b1/github/RazorEnhanced/RazorEnhanced)
